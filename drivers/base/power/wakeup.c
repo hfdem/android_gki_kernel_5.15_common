@@ -33,8 +33,9 @@ suspend_state_t pm_suspend_target_state;
 		srcu_read_lock_held(&wakeup_srcu))
 
 #ifdef CONFIG_BOEFFLA_WL_BLOCKER
-char list_wl[255] = {0};
-char list_wl_search[257] = {0};
+#include "boeffla_wl_blocker.h"
+
+char list_wl_search[LENGTH_LIST_WL_SEARCH] = {0};
 bool wl_blocker_active = false;
 bool wl_blocker_debug = false;
 
@@ -629,6 +630,7 @@ static void wakeup_source_activate(struct wakeup_source *ws)
 static bool check_for_block(struct wakeup_source *ws)
 {
 	char wakelock_name[52] = {0};
+	int length;
 
 	// if debug mode on, print every wakelock requested
 	if (wl_blocker_debug)
@@ -641,8 +643,9 @@ static bool check_for_block(struct wakeup_source *ws)
 	// only if ws structure is valid
 	if (ws)
 	{
-		// wake lock names which are longer than 50 chars are not handled
-		if (strlen(ws->name) > 50)
+		// wake lock names handled have maximum length=50 and minimum=1
+		length = strlen(ws->name);
+		if ((length > 50) || (length < 1))
 			return false;
 
 		// check if wakelock is in wake lock list to be blocked
