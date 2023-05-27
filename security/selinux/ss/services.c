@@ -1527,6 +1527,8 @@ static int security_context_to_sid_core(struct selinux_state *state,
 	struct selinux_policy *policy;
 	struct policydb *policydb;
 	struct sidtab *sidtab;
+	char scontext2_onstack[SZ_128] __aligned(sizeof(long));
+	char str_onstack[SZ_128] __aligned(sizeof(long));
 	char *scontext2, *str = NULL;
 	struct context context;
 	int rc = 0;
@@ -1536,9 +1538,15 @@ static int security_context_to_sid_core(struct selinux_state *state,
 		return -EINVAL;
 
 	/* Copy the string to allow changes and ensure a NUL terminator */
-	scontext2 = kmemdup_nul(scontext, scontext_len, gfp_flags);
-	if (!scontext2)
-		return -ENOMEM;
+	if (scontext_len < sizeof(scontext2_onstack)) {
+		scontext2 = scontext2_onstack;
+		memcpy(scontext2, scontext, scontext_len);
+		scontext2[scontext_len] = '\0';
+	} else {
+		scontext2 = kmemdup_nul(scontext, scontext_len, gfp_flags);
+		if (!scontext2)
+			return -ENOMEM;
+	}
 
 	if (!selinux_initialized(state)) {
 		int i;
@@ -1558,10 +1566,16 @@ static int security_context_to_sid_core(struct selinux_state *state,
 
 	if (force) {
 		/* Save another copy for storing in uninterpreted form */
-		rc = -ENOMEM;
-		str = kstrdup(scontext2, gfp_flags);
-		if (!str)
-			goto out;
+		if (scontext2 == scontext2_onstack) {
+			str = str_onstack;
+			memcpy(str, scontext2, scontext_len + 1);
+		} else {
+			str = kstrdup(scontext2, gfp_flags);
+			if (!str) {
+				rc = -ENOMEM;
+				goto out;
+			}
+		}
 	}
 retry:
 	rcu_read_lock();
@@ -1572,7 +1586,7 @@ retry:
 				      &context, def_sid);
 	if (rc == -EINVAL && force) {
 		context.str = str;
-		context.len = strlen(str) + 1;
+		context.len = scontext_len + 1;
 		str = NULL;
 	} else if (rc)
 		goto out_unlock;
@@ -1586,12 +1600,16 @@ retry:
 		context_destroy(&context);
 		goto retry;
 	}
+	if (context.str == str_onstack)
+		context.str = NULL;
 	context_destroy(&context);
 out_unlock:
 	rcu_read_unlock();
 out:
-	kfree(scontext2);
-	kfree(str);
+	if (scontext2 != scontext2_onstack) {
+		kfree(scontext2);
+		kfree(str);
+	}
 	return rc;
 }
 
