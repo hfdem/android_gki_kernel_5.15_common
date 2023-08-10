@@ -98,18 +98,14 @@
 #include <linux/sched/clock.h>
 #include <linux/tick.h>
 
+#include "gov.h"
+
 /*
  * The PULSE value is added to metrics when they grow and the DECAY_SHIFT value
  * is used for decreasing metrics on a regular basis.
  */
 #define PULSE		1024
 #define DECAY_SHIFT	3
-
-/*
- * Idle state target residency threshold used for deciding whether or not to
- * check the time till the closest expected timer event.
- */
-#define RESIDENCY_THRESHOLD_NS	(15 * NSEC_PER_USEC)
 
 /**
  * struct teo_bin - Metrics used by the TEO cpuidle governor.
