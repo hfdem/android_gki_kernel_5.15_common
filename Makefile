@@ -791,6 +791,11 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning, format-truncation)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, format-overflow)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, address-of-packed-member)
 
+#Enable MLGO for register allocation.
+KBUILD_CFLAGS   += -mllvm -regalloc-enable-advisor=release
+#Enable hot cold split optimization
+KBUILD_CFLAGS   += -mllvm -hot-cold-split=true
+
 ifdef CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE
 KBUILD_CFLAGS += -O2
 else ifdef CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE_O3
