@@ -286,7 +286,9 @@ extern s64 cpuidle_governor_latency_req(unsigned int cpu);
 ({									\
 	int __ret = 0;							\
 									\
-	if (!idx) {							\
+	if (need_resched()) {						\
+		__ret = -1;						\
+	} else if (!idx) {						\
 		cpu_do_idle();						\
 	} else {							\
 		if (!is_retention)					\
