@@ -27,6 +27,8 @@
 #include "blk-mq-sched.h"
 #include "ssg-cgroup.h"
 
+#include <trace/events/block.h>
+
 #if IS_ENABLED(CONFIG_BLK_SEC_STATS)
 extern void blk_sec_stats_account_init(struct request_queue *q);
 extern void blk_sec_stats_account_exit(struct elevator_queue *eq);
@@ -678,6 +680,8 @@ static void ssg_insert_request(struct blk_mq_hw_ctx *hctx, struct request *rq,
 	struct request_queue *q = hctx->queue;
 	struct ssg_data *ssg = q->elevator->elevator_data;
 	const int data_dir = rq_data_dir(rq);
+	LIST_HEAD(free);
+	INIT_LIST_HEAD(&free);
 
 
 	/*
@@ -686,10 +690,12 @@ static void ssg_insert_request(struct blk_mq_hw_ctx *hctx, struct request *rq,
 	 */
 	blk_req_zone_write_unlock(rq);
 
-	if (blk_mq_sched_try_insert_merge(q, rq))
-		return;
+	if (blk_mq_sched_try_insert_merge(q, rq, &free)){
+			blk_mq_free_requests(&free);
+			return;
+	}
 
-	blk_mq_sched_request_inserted(rq);
+	trace_block_rq_insert(rq);
 
 	if (at_head || blk_rq_is_passthrough(rq)) {
 		if (at_head)
