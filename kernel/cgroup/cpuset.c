@@ -205,7 +205,7 @@ struct tmpmasks {
 	cpumask_var_t new_cpus;		/* For update_cpumasks_hier() */
 };
 
-static inline bool task_is_booster(struct task_struct *tsk)
+bool task_is_booster(struct task_struct *tsk)
 {
 	char comm[sizeof(tsk->comm)];
 
