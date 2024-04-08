@@ -15,7 +15,7 @@
 #include <crypto/internal/scompress.h>
 
 
-static uint __read_mostly compression_level = 1;
+static int __read_mostly compression_level = 1;
 
 int set_compression_level(const char *val, const struct kernel_param *kp)
 {
@@ -30,6 +30,8 @@ int set_compression_level(const char *val, const struct kernel_param *kp)
 		temp = 1;
 	} else if (temp > zstd_max_clevel()) {
 		temp = zstd_max_clevel();
+	} else if (temp < zstd_min_clevel()) {
+		temp = zstd_min_clevel();
 	}
 
 	*((int *)kp->arg) = temp;
