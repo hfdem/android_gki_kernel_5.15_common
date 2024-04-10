@@ -36,6 +36,19 @@
 
 static LIST_HEAD(cpufreq_policy_list);
 
+static unsigned int min_limit[3] = {INT_MAX, INT_MAX, INT_MAX};
+
+static int get_index_by_cpu(const unsigned int cpu)
+{
+	if (cpumask_test_cpu(cpu, cpu_lp_mask)) {
+		return 0;
+	} else if (cpumask_test_cpu(cpu, cpu_perf_mask)) {
+		return 1;
+	} else {
+		return 2;
+	}
+}
+
 /* Macros to iterate over CPU policies */
 #define for_each_suitable_policy(__policy, __active)			 \
 	list_for_each_entry(__policy, &cpufreq_policy_list, policy_list) \
@@ -706,6 +719,13 @@ static ssize_t show_cpuinfo_max_freq(struct cpufreq_policy *policy, char *buf)
 	return sprintf(buf, "%u\n", max_freq);
 }
 
+static ssize_t show_scaling_min_freq_limit(struct cpufreq_policy *policy, char *buf)
+{
+	unsigned int val = min_limit[get_index_by_cpu(policy->cpu)];
+
+	return sprintf(buf, "%u\n", val);
+}
+
 show_one(cpuinfo_min_freq, cpuinfo.min_freq);
 show_one(cpuinfo_transition_latency, cpuinfo.transition_latency);
 show_one(scaling_min_freq, min);
@@ -747,6 +767,20 @@ static ssize_t store_##file_name					\
 									\
 	ret = freq_qos_update_request(policy->object##_freq_req, val);\
 	return ret >= 0 ? count : ret;					\
+}
+
+static ssize_t store_scaling_min_freq_limit
+(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+	unsigned long val;
+	int ret;
+
+	ret = sscanf(buf, "%u", &val);
+	if (ret != 1)
+		return -EINVAL;
+
+	min_limit[get_index_by_cpu(policy->cpu)] = val;
+	return count;
 }
 
 store_one(scaling_min_freq, min);
@@ -937,6 +971,7 @@ cpufreq_freq_attr_ro(bios_limit);
 cpufreq_freq_attr_ro(related_cpus);
 cpufreq_freq_attr_ro(affected_cpus);
 cpufreq_freq_attr_rw(scaling_min_freq);
+cpufreq_freq_attr_rw(scaling_min_freq_limit);
 cpufreq_freq_attr_rw(scaling_max_freq);
 cpufreq_freq_attr_rw(scaling_governor);
 cpufreq_freq_attr_rw(scaling_setspeed);
@@ -946,6 +981,7 @@ static struct attribute *default_attrs[] = {
 	&cpuinfo_max_freq.attr,
 	&cpuinfo_transition_latency.attr,
 	&scaling_min_freq.attr,
+	&scaling_min_freq_limit.attr,
 	&scaling_max_freq.attr,
 	&affected_cpus.attr,
 	&related_cpus.attr,
@@ -2563,6 +2599,8 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
 	 */
 	new_data.min = freq_qos_read_value(&policy->constraints, FREQ_QOS_MIN);
 	new_data.max = freq_qos_read_value(&policy->constraints, FREQ_QOS_MAX);
+
+	new_data.min = min(new_data.min, min_limit[get_index_by_cpu(policy->cpu)]);
 
 	pr_debug("setting new policy for CPU %u: %u - %u kHz\n",
 		 new_data.cpu, new_data.min, new_data.max);
