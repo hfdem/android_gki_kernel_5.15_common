@@ -1675,6 +1675,7 @@ size_t ZSTD_initDStream(ZSTD_DStream* zds)
     FORWARD_IF_ERROR(ZSTD_DCtx_refDDict(zds, NULL), "");
     return ZSTD_startingInputLength(zds->format);
 }
+EXPORT_SYMBOL(ZSTD_initDStream);
 
 /* ZSTD_initDStream_usingDDict() :
  * ddict will just be referenced, and must outlive decompression session
@@ -2278,6 +2279,7 @@ size_t ZSTD_decompressStream(ZSTD_DStream* zds, ZSTD_outBuffer* output, ZSTD_inB
         return nextSrcSizeHint;
     }
 }
+EXPORT_SYMBOL(ZSTD_decompressStream);
 
 size_t ZSTD_decompressStream_simpleArgs (
                             ZSTD_DCtx* dctx,
