@@ -36,17 +36,35 @@
 
 static LIST_HEAD(cpufreq_policy_list);
 
-static unsigned int min_limit[3] = {INT_MAX, INT_MAX, INT_MAX};
+#define MAX_CLUSTERS 3
 
-static int get_index_by_cpu(const unsigned int cpu)
-{
-	if (cpumask_test_cpu(cpu, cpu_lp_mask)) {
-		return 0;
-	} else if (cpumask_test_cpu(cpu, cpu_perf_mask)) {
-		return 1;
-	} else {
-		return 2;
+struct cpumask_uint_kv {
+    cpumask_var_t key;
+    unsigned int value;
+};
+
+static struct cpumask_uint_kv cpumask_min_limit_store[MAX_CLUSTERS] __read_mostly;
+
+static void store_cpumask_min_limit(const cpumask_var_t key, const unsigned int value) {
+	int i;
+	for (i = 0; i < MAX_CLUSTERS; i++) {
+		if (cpumask_empty(cpumask_min_limit_store[i].key) || cpumask_equal(cpumask_min_limit_store[i].key, key)) {
+			cpumask_copy(cpumask_min_limit_store[i].key, key);
+			cpumask_min_limit_store[i].value = value;
+			return;
+		}
 	}
+	pr_err("cpumask_min_limit_store is full.\n");
+}
+
+static unsigned int get_cpumask_min_limit(const cpumask_var_t key) {
+	int i;
+	for (i = 0; i < MAX_CLUSTERS; i++) {
+		if (cpumask_equal(cpumask_min_limit_store[i].key, key)) {
+		    return cpumask_min_limit_store[i].value;
+		}
+	}
+	return INT_MAX;
 }
 
 /* Macros to iterate over CPU policies */
@@ -721,7 +739,7 @@ static ssize_t show_cpuinfo_max_freq(struct cpufreq_policy *policy, char *buf)
 
 static ssize_t show_scaling_min_freq_limit(struct cpufreq_policy *policy, char *buf)
 {
-	unsigned int val = min_limit[get_index_by_cpu(policy->cpu)];
+	unsigned int val = get_cpumask_min_limit(policy->related_cpus);
 
 	return sprintf(buf, "%u\n", val);
 }
@@ -779,7 +797,7 @@ static ssize_t store_scaling_min_freq_limit
 	if (ret != 1)
 		return -EINVAL;
 
-	min_limit[get_index_by_cpu(policy->cpu)] = val;
+	store_cpumask_min_limit(policy->related_cpus, val);
 	return count;
 }
 
@@ -2600,7 +2618,7 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
 	new_data.min = freq_qos_read_value(&policy->constraints, FREQ_QOS_MIN);
 	new_data.max = freq_qos_read_value(&policy->constraints, FREQ_QOS_MAX);
 
-	new_data.min = min(new_data.min, min_limit[get_index_by_cpu(policy->cpu)]);
+	new_data.min = min(new_data.min, get_cpumask_min_limit(policy->related_cpus));
 
 	pr_debug("setting new policy for CPU %u: %u - %u kHz\n",
 		 new_data.cpu, new_data.min, new_data.max);
