@@ -65,6 +65,12 @@ size_t zstd_dstream_workspace_bound(size_t max_window_size)
 }
 EXPORT_SYMBOL(zstd_dstream_workspace_bound);
 
+size_t ZSTD_DStreamWorkspaceBound(size_t max_window_size)
+{
+	return zstd_dstream_workspace_bound(max_window_size);
+}
+EXPORT_SYMBOL(ZSTD_DStreamWorkspaceBound);
+
 zstd_dstream *zstd_init_dstream(size_t max_window_size, void *workspace,
 	size_t workspace_size)
 {
