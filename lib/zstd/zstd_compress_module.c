@@ -107,6 +107,12 @@ size_t zstd_cstream_workspace_bound(const zstd_compression_parameters *cparams)
 }
 EXPORT_SYMBOL(zstd_cstream_workspace_bound);
 
+size_t ZSTD_CStreamWorkspaceBound(ZSTD_compressionParameters *cparams)
+{
+	return zstd_cstream_workspace_bound(cparams);
+}
+EXPORT_SYMBOL(ZSTD_CStreamWorkspaceBound);
+
 zstd_cstream *zstd_init_cstream(const zstd_parameters *parameters,
 	unsigned long long pledged_src_size, void *workspace, size_t workspace_size)
 {
