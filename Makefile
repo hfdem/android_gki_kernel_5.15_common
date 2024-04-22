@@ -1039,6 +1039,8 @@ ifeq ($(shell test $(CONFIG_LLD_VERSION) -lt 130000; echo $$?),0)
 KBUILD_LDFLAGS	+= -plugin-opt=-warn-stack-size=$(CONFIG_FRAME_WARN)
 endif
 endif
+#Enable MLGO for register allocation.
+KBUILD_LDFLAGS += -mllvm -regalloc-enable-advisor=release
 endif
 
 ifdef CONFIG_LTO
