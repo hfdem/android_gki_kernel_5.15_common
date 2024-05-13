@@ -48,7 +48,7 @@ static struct cpumask_uint_kv cpumask_min_limit_store[MAX_CLUSTERS] __read_mostl
 static void store_cpumask_min_limit(const cpumask_var_t key, const unsigned int value) {
 	int i;
 	for (i = 0; i < MAX_CLUSTERS; i++) {
-		if (cpumask_empty(cpumask_min_limit_store[i].key) || cpumask_equal(cpumask_min_limit_store[i].key, key)) {
+		if (cpumask_equal(cpumask_min_limit_store[i].key, key) || unlikely(cpumask_empty(cpumask_min_limit_store[i].key))) {
 			cpumask_copy(cpumask_min_limit_store[i].key, key);
 			cpumask_min_limit_store[i].value = value;
 			return;
