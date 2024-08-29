@@ -685,7 +685,15 @@ void elevator_init_mq(struct request_queue *q)
 	if (unlikely(q->elevator))
 		return;
 
-	if (!q->required_elevator_features)
+	if (IS_ENABLED(CONFIG_BFQ_DEFAULT)) {
+		e = elevator_get(q, "bfq", false);
+	} else if (IS_ENABLED(CONFIG_MQ_KYBER_DEFAULT)) {
+		e = elevator_get(q, "kyber", false);
+	} else if (IS_ENABLED(CONFIG_MQ_KYBER_DEFAULT)) {
+		e = elevator_get(q, "kyber", false);
+	} else if (IS_ENABLED(CONFIG_MQ_SSG_DEFAULT)) {
+		e = elevator_get(q, "ssg", false);
+	} else if (!q->required_elevator_features)
 		e = elevator_get_default(q);
 	else
 		e = elevator_get_by_features(q);
