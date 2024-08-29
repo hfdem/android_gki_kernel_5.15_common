@@ -59,6 +59,33 @@ config MQ_IOSCHED_SSG_CGROUP
 	help
 	  Control Group for SamSung Generic IO scheduler.
 
+choice
+	prompt "Default mq I/O scheduler"
+	default MQ_DEADLINE_DEFAULT
+	help
+	  Select the I/O scheduler which will be used by default.
+
+	config MQ_DEADLINE_DEFAULT
+		bool "MQ Deadline"
+		depends on MQ_IOSCHED_DEADLINE
+
+	config MQ_KYBER_DEFAULT
+		bool "MQ Kyber"
+		depends on MQ_IOSCHED_KYBER
+
+	config BFQ_DEFAULT
+		bool "BFQ"
+		depends on IOSCHED_BFQ
+
+	config MQ_SSG_DEFAULT
+		bool "SamSung Generic I/O scheduler"
+		depends on MQ_IOSCHED_SSG
+
+	config NONE_DEFAULT
+		bool "NONE"
+
+endchoice
+
 
 
 endmenu
