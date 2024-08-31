@@ -65,11 +65,6 @@ struct sugov_cpu {
 	unsigned long		util;
 	unsigned long		bw_dl;
 	unsigned long		max;
-
-	/* The field below is for single-CPU policies only: */
-#ifdef CONFIG_NO_HZ_COMMON
-	unsigned long		saved_idle_calls;
-#endif
 };
 
 
@@ -282,19 +277,6 @@ static void sugov_get_util(struct sugov_cpu *sg_cpu)
 					  FREQUENCY_UTIL, NULL);
 }
 
-#ifdef CONFIG_NO_HZ_COMMON
-static bool sugov_cpu_is_busy(struct sugov_cpu *sg_cpu)
-{
-	unsigned long idle_calls = tick_nohz_get_idle_calls_cpu(sg_cpu->cpu);
-	bool ret = idle_calls == sg_cpu->saved_idle_calls;
-
-	sg_cpu->saved_idle_calls = idle_calls;
-	return ret;
-}
-#else
-static inline bool sugov_cpu_is_busy(struct sugov_cpu *sg_cpu) { return false; }
-#endif /* CONFIG_NO_HZ_COMMON */
-
 /*
  * Make sugov_should_update_freq() ignore the rate limit when DL
  * has increased the utilization.
@@ -325,23 +307,12 @@ static void sugov_update_single_freq(struct update_util_data *hook, u64 time,
 {
 	struct sugov_cpu *sg_cpu = container_of(hook, struct sugov_cpu, update_util);
 	struct sugov_policy *sg_policy = sg_cpu->sg_policy;
-	unsigned int cached_freq = sg_policy->cached_raw_freq;
 	unsigned int next_f;
 
 	if (!sugov_update_single_common(sg_cpu, time, flags))
 		return;
 
 	next_f = get_next_freq(sg_policy, sg_cpu->util, sg_cpu->max, time);
-	/*
-	 * Do not reduce the frequency if the CPU has not been idle
-	 * recently, as the reduction is likely to be premature then.
-	 */
-	if (sugov_cpu_is_busy(sg_cpu) && next_f < sg_policy->next_freq) {
-		next_f = sg_policy->next_freq;
-
-		/* Restore cached freq as next_freq has changed */
-		sg_policy->cached_raw_freq = cached_freq;
-	}
 
 	if (!sugov_update_next_freq(sg_policy, time, next_f))
 		return;
@@ -364,7 +335,6 @@ static void sugov_update_single_perf(struct update_util_data *hook, u64 time,
 				     unsigned int flags)
 {
 	struct sugov_cpu *sg_cpu = container_of(hook, struct sugov_cpu, update_util);
-	unsigned long prev_util = sg_cpu->util;
 
 	/*
 	 * Fall back to the "frequency" path if frequency invariance is not
@@ -378,13 +348,6 @@ static void sugov_update_single_perf(struct update_util_data *hook, u64 time,
 
 	if (!sugov_update_single_common(sg_cpu, time, flags))
 		return;
-
-	/*
-	 * Do not reduce the target performance level if the CPU has not been
-	 * idle recently, as the reduction is likely to be premature then.
-	 */
-	if (sugov_cpu_is_busy(sg_cpu) && sg_cpu->util < prev_util)
-		sg_cpu->util = prev_util;
 
 	cpufreq_driver_adjust_perf(sg_cpu->cpu, map_util_perf(sg_cpu->bw_dl),
 				   map_util_perf(sg_cpu->util), sg_cpu->max);
