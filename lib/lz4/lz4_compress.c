@@ -968,7 +968,7 @@ int LZ4_loadDict(LZ4_stream_t *LZ4_dict, const char *dictionary, int dictSize)
 	const tableType_t tableType = byU32;
 	const BYTE *p = (const BYTE *)dictionary;
 	const BYTE *const dictEnd = p + dictSize;
-	const BYTE *base;
+        U32 idx32;
 
 	DEBUGLOG(4, "LZ4_loadDict (%i bytes from %p into %p)", dictSize,
 		 dictionary, LZ4_dict);
@@ -993,14 +993,15 @@ int LZ4_loadDict(LZ4_stream_t *LZ4_dict, const char *dictionary, int dictSize)
 
 	if ((dictEnd - p) > 64 * KB)
 		p = dictEnd - 64 * KB;
-	base = dictEnd - dict->currentOffset;
 	dict->dictionary = p;
 	dict->dictSize = (U32)(dictEnd - p);
 	dict->tableType = (U32)tableType;
+        idx32 = dict->currentOffset - dict->dictSize;
 
 	while (p <= dictEnd - HASH_UNIT) {
-		LZ4_putPosition(p, dict->hashTable, tableType, base);
-		p += 3;
+          U32 const h = LZ4_hashPosition(p, tableType);
+          LZ4_putIndexOnHash(idx32, h, dict->hashTable, tableType);
+          p+=3; idx32+=3;
 	}
 
 	return (int)dict->dictSize;
