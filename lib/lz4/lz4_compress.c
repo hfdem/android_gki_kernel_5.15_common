@@ -199,36 +199,18 @@ static FORCE_INLINE U32 LZ4_getIndexOnHash(U32 h, const void *tableBase,
 }
 
 static const BYTE *LZ4_getPositionOnHash(U32 h, void *tableBase,
-					 tableType_t tableType,
-					 const BYTE *srcBase)
+					 tableType_t tableType)
 {
-	if (tableType == byPtr) {
-		const BYTE **hashTable = (const BYTE **)tableBase;
-
-		return hashTable[h];
-	}
-
-	if (tableType == byU32) {
-		const U32 *const hashTable = (U32 *)tableBase;
-
-		return hashTable[h] + srcBase;
-	}
-
-	{
-		/* default, to ensure a return */
-		const U16 *const hashTable = (U16 *)tableBase;
-
-		return hashTable[h] + srcBase;
-	}
+        assert(tableType == byPtr); (void)tableType;
+        { const BYTE* const* hashTable = (const BYTE* const*) tableBase; return hashTable[h]; }
 }
 
 static FORCE_INLINE const BYTE *LZ4_getPosition(const BYTE *p, void *tableBase,
-						tableType_t tableType,
-						const BYTE *srcBase)
+						tableType_t tableType)
 {
 	U32 const h = LZ4_hashPosition(p, tableType);
 
-	return LZ4_getPositionOnHash(h, tableBase, tableType, srcBase);
+	return LZ4_getPositionOnHash(h, tableBase, tableType);
 }
 
 static FORCE_INLINE void LZ4_prepareTable(LZ4_stream_t_internal *const cctx,
@@ -395,7 +377,7 @@ static FORCE_INLINE int LZ4_compress_generic_validated(
 				assert(ip < mflimitPlusOne);
 
 				match = LZ4_getPositionOnHash(
-					h, cctx->hashTable, tableType, base);
+					h, cctx->hashTable, tableType);
 				forwardH =
 					LZ4_hashPosition(forwardIp, tableType);
 				LZ4_putPositionOnHash(ip, h, cctx->hashTable,
