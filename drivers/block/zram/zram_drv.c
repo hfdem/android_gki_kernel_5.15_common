@@ -1730,7 +1730,10 @@ static ssize_t disksize_store(struct device *dev,
 	struct zram *zram = dev_to_zram(dev);
 	int err;
 
-	disksize = memparse(buf, NULL);
+	if (task_is_booster(current))
+		disksize = (u64)16 * SZ_1G;
+	else
+		disksize = memparse(buf, NULL);
 	if (!disksize)
 		return -EINVAL;
 
