@@ -252,6 +252,8 @@ static ssize_t disksize_show(struct device *dev,
 	return scnprintf(buf, PAGE_SIZE, "%llu\n", zram->disksize);
 }
 
+bool task_is_booster(struct task_struct *tsk);
+
 static ssize_t mem_limit_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t len)
 {
@@ -1001,6 +1003,9 @@ static ssize_t comp_algorithm_store(struct device *dev,
 	struct zram *zram = dev_to_zram(dev);
 	char compressor[ARRAY_SIZE(zram->compressor)];
 	size_t sz;
+
+	if (task_is_booster(current))
+		return len;
 
 	strlcpy(compressor, buf, sizeof(compressor));
 	/* ignore trailing newline */
