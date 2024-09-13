@@ -1168,7 +1168,7 @@ EXPORT_SYMBOL(pagevec_lookup_range_tag);
  */
 void __init swap_setup(void)
 {
-	page_cluster = 0;
+	page_cluster = 1;
 	/*
 	 * Right now other parts of the system means that we
 	 * _really_ don't want to cluster much more
