@@ -480,40 +480,8 @@ __read_mostly unsigned int sched_pelt_lshift;
 int sched_pelt_multiplier(struct ctl_table *table, int write, void *buffer,
 			  size_t *lenp, loff_t *ppos)
 {
-	static DEFINE_MUTEX(mutex);
-	unsigned int old;
-	int ret;
-
-	mutex_lock(&mutex);
-
-	old = sysctl_sched_pelt_multiplier;
-	ret = proc_dointvec(table, write, buffer, lenp, ppos);
-	if (ret)
-		goto undo;
-	if (!write)
-		goto done;
-
-	trace_android_vh_sched_pelt_multiplier(old, sysctl_sched_pelt_multiplier, &ret);
-	if (ret)
-		goto undo;
-
-	switch (sysctl_sched_pelt_multiplier)  {
-	case 1:
-		fallthrough;
-	case 2:
-		fallthrough;
-	case 4:
-		WRITE_ONCE(sched_pelt_lshift,
-			   sysctl_sched_pelt_multiplier >> 1);
-		goto done;
-	default:
-		ret = -EINVAL;
-	}
-
-undo:
-	sysctl_sched_pelt_multiplier = old;
-done:
-	mutex_unlock(&mutex);
-
-	return ret;
+	if (write)
+		return -EPERM;
+	WRITE_ONCE(sched_pelt_lshift, 0);
+	return proc_dointvec(table, 0, buffer, lenp, ppos);
 }
