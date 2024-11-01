@@ -10350,6 +10350,63 @@ struct uclamp_request {
 	int ret;
 };
 
+struct uclamp_min_multiplier_param {
+	char	*name;
+	u64	min_multiplier;
+};
+
+static struct uclamp_min_multiplier_param uclamp_min_multiplier[] = {
+	{"top-app",	0.25 * POW10(UCLAMP_PERCENT_SHIFT)},
+	{"foreground",	0.25 * POW10(UCLAMP_PERCENT_SHIFT)},
+};
+
+static ssize_t cpu_uclamp_min_multiplier_write(struct kernfs_open_file *of,
+				    char *buf, size_t nbytes,
+				    loff_t off)
+{
+	int ret, i;
+	u64 temp;
+	const char *cgroup_name = of_css(of)->cgroup->kn->name;
+
+	for (i = 0; i < ARRAY_SIZE(uclamp_min_multiplier); i++) {
+		if (!strcmp(cgroup_name, uclamp_min_multiplier[i].name)) {
+			buf = strim(buf);
+			ret = cgroup_parse_float(buf, UCLAMP_PERCENT_SHIFT,
+					     &temp);
+			if (ret != 0)
+				return ret;
+
+			if (temp > POW10(UCLAMP_PERCENT_SHIFT))
+				return -ERANGE;
+
+			uclamp_min_multiplier[i].min_multiplier = temp;
+			break;
+		}
+	}
+
+	return nbytes;
+}
+
+static int cpu_uclamp_min_multiplier_show(struct seq_file *sf, void *v)
+{
+	int i;
+	u64 percent;
+	u32 rem;
+	const char *cgroup_name = seq_css(sf)->cgroup->kn->name;
+
+	for (i = 0; i < ARRAY_SIZE(uclamp_min_multiplier); i++) {
+		if (!strcmp(cgroup_name, uclamp_min_multiplier[i].name)) {
+			percent = div_u64_rem(uclamp_min_multiplier[i].min_multiplier,
+							 POW10(UCLAMP_PERCENT_SHIFT), &rem);
+			seq_printf(sf, "%llu.%0*u\n", percent, UCLAMP_PERCENT_SHIFT, rem);
+			return 0;
+		}
+	}
+
+	seq_printf(sf, "Unavailable\n");
+	return 0;
+}
+
 static inline struct uclamp_request
 capacity_from_percent(char *buf)
 {
@@ -10416,6 +10473,34 @@ static ssize_t cpu_uclamp_min_write(struct kernfs_open_file *of,
 				    char *buf, size_t nbytes,
 				    loff_t off)
 {
+	int ret, i;
+	u64 percent;
+	u32 rem;
+	char temp_buf[8];
+	const char *cgroup_name = of_css(of)->cgroup->kn->name;
+
+	for (i = 0; i < ARRAY_SIZE(uclamp_min_multiplier); i++) {
+		if (!strcmp(cgroup_name, uclamp_min_multiplier[i].name)) {
+			buf = strim(buf);
+			if (strcmp(buf, "max")) {
+				ret = cgroup_parse_float(buf, UCLAMP_PERCENT_SHIFT,
+						     &percent);
+				if (ret != 0)
+					return ret;
+			} else {
+				percent = UCLAMP_PERCENT_SCALE;
+			}
+			
+			percent = percent * uclamp_min_multiplier[i].min_multiplier /
+					POW10(UCLAMP_PERCENT_SHIFT);
+			percent = div_u64_rem(percent, POW10(UCLAMP_PERCENT_SHIFT), &rem);
+			
+			snprintf(temp_buf, sizeof(temp_buf), "%llu.%0*u", percent, UCLAMP_PERCENT_SHIFT, rem);
+			buf = temp_buf;
+			break;
+		}
+	}
+
 	return cpu_uclamp_write(of, buf, nbytes, off, UCLAMP_MIN);
 }
 
@@ -10910,6 +10995,12 @@ static struct cftype cpu_legacy_files[] = {
 		.flags = CFTYPE_NOT_ON_ROOT,
 		.seq_show = cpu_uclamp_min_show,
 		.write = cpu_uclamp_min_write,
+	},
+	{
+		.name = "uclamp.min.multiplier",
+		.flags = CFTYPE_NOT_ON_ROOT,
+		.seq_show = cpu_uclamp_min_multiplier_show,
+		.write = cpu_uclamp_min_multiplier_write,
 	},
 	{
 		.name = "uclamp.max",
