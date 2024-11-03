@@ -28,21 +28,27 @@ static bool set_binder_rt_task(struct binder_transaction *t) {
 
 	if (t && t->from && t->from->task && t->to_proc && t->to_proc->tsk && (!(t->flags & TF_ONE_WAY)) &&
 	    rt_policy(t->from->task->policy)) {
-		if (!strncmp(t->from->task->group_leader->comm, "com.miui.home", strlen("com.miui.home")) &&
-		    !strncmp(t->from->task->comm, "RenderThread", strlen("RenderThread")) &&
+		#define from_task_comm    t->from->task->comm
+		#define from_task_gl_comm t->from->task->group_leader->comm
+
+		if (!strncmp(from_task_gl_comm, "com.miui.home", strlen("com.miui.home")) &&
+		    !strncmp(from_task_comm, "RenderThread", strlen("RenderThread")) &&
 		    !strncmp(t->to_proc->tsk->comm, "surfaceflinger", strlen("surfaceflinger")))
 			return true;
-		if (!strncmp(t->from->task->group_leader->comm, "surfaceflinger", strlen("surfaceflinger")) &&
-		    !strncmp(t->from->task->comm, "passBlur", strlen("passBlur")))
+		if (!strncmp(from_task_gl_comm, "surfaceflinger", strlen("surfaceflinger")) &&
+		    !strncmp(from_task_comm, "passBlur", strlen("passBlur")))
 			return true;
-		if (!strncmp(t->from->task->group_leader->comm, "cameraserver", strlen("cameraserver")) &&
-		    !strncmp(t->from->task->comm, "C3Dev-", strlen("C3Dev-")) &&
-		    strstr(t->from->task->comm, "-ReqQ"))
+		if (!strncmp(from_task_gl_comm, "cameraserver", strlen("cameraserver")) &&
+		    !strncmp(from_task_comm, "C3Dev-", strlen("C3Dev-")) &&
+		    strstr(from_task_comm, "-ReqQ"))
 			return true;
 		if (t->from->task->pid == t->from->task->tgid)
 			for (i = 0; i < ARRAY_SIZE(task_name); i++)
-				if (strncmp(t->from->task->comm, task_name[i], strlen(task_name[i])) == 0)
+				if (strncmp(from_task_comm, task_name[i], strlen(task_name[i])) == 0)
 					return true;
+
+		#undef from_task_comm
+		#undef from_task_gl_comm
 	}
 	return false;
 }
