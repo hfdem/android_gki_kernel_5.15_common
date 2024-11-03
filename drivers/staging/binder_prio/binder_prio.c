@@ -13,6 +13,7 @@ static const char *task_name[] = {
 	"ndroid.systemui",  // com.android.systemui
 	"surfaceflinger",
 	"cameraserver",
+	"camerahalserver",
 	"rsonalassistant",  // com.miui.personalassistant
 };
 
