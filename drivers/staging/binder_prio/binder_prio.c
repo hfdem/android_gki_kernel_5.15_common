@@ -11,8 +11,9 @@
 static const char *task_name[] = {
 	"com.miui.home",
 	"ndroid.systemui",  // com.android.systemui
-	// "surfaceflinger",
-	"com.tencent.mm",
+	"surfaceflinger",
+	"cameraserver",
+	"rsonalassistant",  // com.miui.personalassistant
 };
 
 static int to_userspace_prio(int policy, int kernel_priority) {
@@ -26,15 +27,22 @@ static bool set_binder_rt_task(struct binder_transaction *t) {
 	int i;
 
 	if (t && t->from && t->from->task && t->to_proc && t->to_proc->tsk && (!(t->flags & TF_ONE_WAY)) &&
-	    rt_policy(t->from->task->policy) && (t->from->task->pid == t->from->task->tgid)) {
-		for (i = 0; i < ARRAY_SIZE(task_name); i++) {
-			if (strncmp(t->from->task->comm, task_name[i], strlen(task_name[i])) == 0) {
-				return true;
-			}
-		}
+	    rt_policy(t->from->task->policy)) {
+		if (!strncmp(t->from->task->group_leader->comm, "com.miui.home", strlen("com.miui.home")) &&
+		    !strncmp(t->from->task->comm, "RenderThread", strlen("RenderThread")) &&
+		    !strncmp(t->to_proc->tsk->comm, "surfaceflinger", strlen("surfaceflinger")))
+			return true;
 		if (!strncmp(t->from->task->group_leader->comm, "surfaceflinger", strlen("surfaceflinger")) &&
 		    !strncmp(t->from->task->comm, "passBlur", strlen("passBlur")))
 			return true;
+		if (!strncmp(t->from->task->group_leader->comm, "cameraserver", strlen("cameraserver")) &&
+		    !strncmp(t->from->task->comm, "C3Dev-", strlen("C3Dev-")) &&
+		    strstr(t->from->task->comm, "-ReqQ"))
+			return true;
+		if (t->from->task->pid == t->from->task->tgid)
+			for (i = 0; i < ARRAY_SIZE(task_name); i++)
+				if (strncmp(t->from->task->comm, task_name[i], strlen(task_name[i])) == 0)
+					return true;
 	}
 	return false;
 }
