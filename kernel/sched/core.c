@@ -10356,8 +10356,8 @@ struct uclamp_min_multiplier_param {
 };
 
 static struct uclamp_min_multiplier_param uclamp_min_multiplier[] = {
-	{"top-app",	0.25 * POW10(UCLAMP_PERCENT_SHIFT)},
-	{"foreground",	0.25 * POW10(UCLAMP_PERCENT_SHIFT)},
+	{"top-app",	1.00 * POW10(UCLAMP_PERCENT_SHIFT)},
+	{"foreground",	1.00 * POW10(UCLAMP_PERCENT_SHIFT)},
 };
 
 static ssize_t cpu_uclamp_min_multiplier_write(struct kernfs_open_file *of,
