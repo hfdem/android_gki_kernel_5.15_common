@@ -43,6 +43,13 @@ static bool set_binder_rt_task(struct binder_transaction *t) {
 		    !strncmp(from_task_comm, "C3Dev-", strlen("C3Dev-")) &&
 		    strstr(from_task_comm, "-ReqQ"))
 			return true;
+		/*
+		 * `wmshell.main` and `wmshell.splashscreen` threads are defined in
+		 * `com.android.wm.shell.dagger.WMShellConcurrencyModule` in the Android source code.
+		 */
+		if (!strncmp(from_task_comm, "wmshell.main", strlen("wmshell.main")) ||
+		    !strncmp(from_task_comm, "ll.splashscreen", strlen("ll.splashscreen")))
+			return true;
 		if (t->from->task->pid == t->from->task->tgid)
 			for (i = 0; i < ARRAY_SIZE(task_name); i++)
 				if (strncmp(from_task_comm, task_name[i], strlen(task_name[i])) == 0)
