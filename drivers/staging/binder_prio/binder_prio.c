@@ -8,6 +8,13 @@
 #include <../../../kernel/sched/sched.h>
 #include <linux/string.h>
 
+#ifdef CONFIG_BINDER_PRIO_DEBUG
+#include <linux/module.h>
+
+static uint __read_mostly debug = 0;
+module_param(debug, uint, 0644);
+#endif
+
 static const char *task_name[] = {
 	"com.miui.home",
 	"ndroid.systemui",  // com.android.systemui
@@ -35,25 +42,36 @@ static bool set_binder_rt_task(struct binder_transaction *t) {
 		if (!strncmp(from_task_gl_comm, "com.miui.home", strlen("com.miui.home")) &&
 		    !strncmp(from_task_comm, "RenderThread", strlen("RenderThread")) &&
 		    !strncmp(t->to_proc->tsk->comm, "surfaceflinger", strlen("surfaceflinger")))
-			return true;
+			goto yes_and_exit;
 		if (!strncmp(from_task_gl_comm, "surfaceflinger", strlen("surfaceflinger")) &&
 		    !strncmp(from_task_comm, "passBlur", strlen("passBlur")))
-			return true;
+			goto yes_and_exit;
 		if (!strncmp(from_task_gl_comm, "cameraserver", strlen("cameraserver")) &&
 		    !strncmp(from_task_comm, "C3Dev-", strlen("C3Dev-")) &&
 		    strstr(from_task_comm, "-ReqQ"))
-			return true;
+			goto yes_and_exit;
 		/*
 		 * `wmshell.main` and `wmshell.splashscreen` threads are defined in
 		 * `com.android.wm.shell.dagger.WMShellConcurrencyModule` in the Android source code.
 		 */
 		if (!strncmp(from_task_comm, "wmshell.main", strlen("wmshell.main")) ||
 		    !strncmp(from_task_comm, "ll.splashscreen", strlen("ll.splashscreen")))
-			return true;
+			goto yes_and_exit;
 		if (t->from->task->pid == t->from->task->tgid)
 			for (i = 0; i < ARRAY_SIZE(task_name); i++)
 				if (strncmp(from_task_comm, task_name[i], strlen(task_name[i])) == 0)
-					return true;
+					goto yes_and_exit;
+
+		return false;
+
+yes_and_exit:
+#ifdef CONFIG_BINDER_PRIO_DEBUG
+		if (debug)
+			pr_info("binder_prio: %s: tid: %d, from_task: %s, from_task_gl: %s; to_task: %s\n",
+				__func__, t->from->task->pid,
+				t->from->task->comm, t->from->task->group_leader->comm, t->to_proc->tsk->comm);
+#endif
+		return true;
 
 		#undef from_task_comm
 		#undef from_task_gl_comm

@@ -1,3 +1,10 @@
 config BINDER_PRIO
 	tristate "Xiaomi binder prio"
 	default n
+
+if BINDER_PRIO
+
+config BINDER_PRIO_DEBUG
+	bool "Debug"
+
+endif
