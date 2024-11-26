@@ -37,7 +37,11 @@ $(warning Detected assembler with broken .inst; disassembly will be unreliable)
 endif
 
 ifeq ($(shell test $(CONFIG_CLANG_VERSION) -gt 130000 2>/dev/null; echo $$?),0)
-KBUILD_CFLAGS	+= -mcpu=cortex-a510
+KBUILD_CFLAGS	+= -march=armv9-a+crypto+nosve -mcpu=cortex-a510
+KBUILD_AFLAGS   += -march=armv9-a+crypto+nosve -mcpu=cortex-a510
+endif
+ifeq ($(CONFIG_LD_IS_LLD), y)
+KBUILD_LDFLAGS  += -mllvm -march=armv9-a+crypto+nosve -mcpu=cortex-a510
 endif
 
 KBUILD_CFLAGS	+= -mgeneral-regs-only	\
