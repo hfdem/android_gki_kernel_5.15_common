@@ -224,7 +224,6 @@ bool task_is_booster(struct task_struct *tsk)
 	       !strcmp(comm, "init.qcom.post_") ||
 	       !strcmp(comm, "mtkPowerMsgHdl") ||
 	       !strcmp(comm, "mtkPowerService") ||
-                   !strncmp(comm, "core_ctl_", 9) ||
 	           !strncmp(comm, "system_perf_ini", 9);
 }
 
