@@ -29,14 +29,15 @@ MEM_STATIC unsigned ZSTD_countTrailingZeros32_fallback(U32 val)
 MEM_STATIC unsigned ZSTD_countTrailingZeros32(U32 val)
 {
     assert(val != 0);
-#   if (__GNUC__ >= 4)
-        return (unsigned)__builtin_ctz(val);
-#   else
-        return ZSTD_countTrailingZeros32_fallback(val);
-#   endif
+#if (__GNUC__ >= 4)
+    return (unsigned)__builtin_ctz(val);
+#else
+    return ZSTD_countTrailingZeros32_fallback(val);
+#endif
 }
 
-MEM_STATIC unsigned ZSTD_countLeadingZeros32_fallback(U32 val) {
+MEM_STATIC unsigned ZSTD_countLeadingZeros32_fallback(U32 val)
+{
     assert(val != 0);
     {
         static const U32 DeBruijnClz[32] = {0, 9, 1, 10, 13, 21, 2, 29,
@@ -55,47 +56,47 @@ MEM_STATIC unsigned ZSTD_countLeadingZeros32_fallback(U32 val) {
 MEM_STATIC unsigned ZSTD_countLeadingZeros32(U32 val)
 {
     assert(val != 0);
-#   if (__GNUC__ >= 4)
-        return (unsigned)__builtin_clz(val);
-#   else
-        return ZSTD_countLeadingZeros32_fallback(val);
-#   endif
+#if (__GNUC__ >= 4)
+    return (unsigned)__builtin_clz(val);
+#else
+    return ZSTD_countLeadingZeros32_fallback(val);
+#endif
 }
 
 MEM_STATIC unsigned ZSTD_countTrailingZeros64(U64 val)
 {
     assert(val != 0);
-#   if (__GNUC__ >= 4) && defined(__LP64__)
-        return (unsigned)__builtin_ctzll(val);
-#   else
-        {
-            U32 mostSignificantWord = (U32)(val >> 32);
-            U32 leastSignificantWord = (U32)val;
-            if (leastSignificantWord == 0) {
-                return 32 + ZSTD_countTrailingZeros32(mostSignificantWord);
-            } else {
-                return ZSTD_countTrailingZeros32(leastSignificantWord);
-            }
+#if (__GNUC__ >= 4) && defined(__LP64__)
+    return (unsigned)__builtin_ctzll(val);
+#else
+    {
+        U32 mostSignificantWord = (U32)(val >> 32);
+        U32 leastSignificantWord = (U32)val;
+        if (leastSignificantWord == 0) {
+            return 32 + ZSTD_countTrailingZeros32(mostSignificantWord);
+        } else {
+            return ZSTD_countTrailingZeros32(leastSignificantWord);
         }
-#   endif
+    }
+#endif
 }
 
 MEM_STATIC unsigned ZSTD_countLeadingZeros64(U64 val)
 {
     assert(val != 0);
-#   if (__GNUC__ >= 4)
-        return (unsigned)(__builtin_clzll(val));
-#   else
-        {
-            U32 mostSignificantWord = (U32)(val >> 32);
-            U32 leastSignificantWord = (U32)val;
-            if (mostSignificantWord == 0) {
-                return 32 + ZSTD_countLeadingZeros32(leastSignificantWord);
-            } else {
-                return ZSTD_countLeadingZeros32(mostSignificantWord);
-            }
+#if (__GNUC__ >= 4)
+    return (unsigned)(__builtin_clzll(val));
+#else
+    {
+        U32 mostSignificantWord = (U32)(val >> 32);
+        U32 leastSignificantWord = (U32)val;
+        if (mostSignificantWord == 0) {
+            return 32 + ZSTD_countLeadingZeros32(leastSignificantWord);
+        } else {
+            return ZSTD_countLeadingZeros32(mostSignificantWord);
         }
-#   endif
+    }
+#endif
 }
 
 MEM_STATIC unsigned ZSTD_NbCommonBytes(size_t val)

@@ -150,9 +150,6 @@
 
 /* disable warnings */
 
-/*Like DYNAMIC_BMI2 but for compile time determination of BMI2 support*/
-
-
 /* compile time determination of SIMD support */
 
 /* C-language Attributes are added in C23. */
@@ -175,8 +172,14 @@
 #define ZSTD_FALLTHROUGH fallthrough
 
 /*-**************************************************************
-*  Alignment check
+*  Alignment
 *****************************************************************/
+
+/* @return 1 if @u is a 2^n value, 0 otherwise
+ * useful to check a value is valid for alignment restrictions */
+MEM_STATIC int ZSTD_isPower2(size_t u) {
+    return (u & (u-1)) == 0;
+}
 
 /* this test was initially positioned in mem.h,
  * but this file is removed (or replaced) for linux kernel
@@ -191,6 +194,12 @@
 #  define ZSTD_ALIGNOF(T) __alignof(T)
 
 #endif /* ZSTD_ALIGNOF */
+
+#ifndef ZSTD_ALIGNED
+/* C90-compatible alignment macro (GCC/Clang). Adjust for other compilers if needed. */
+#define ZSTD_ALIGNED(a) __attribute__((aligned(a)))
+#endif /* ZSTD_ALIGNED */
+
 
 /*-**************************************************************
 *  Sanitizer
@@ -215,7 +224,7 @@
 #endif
 
 /*
- * Helper function to perform a wrapped pointer difference without trigging
+ * Helper function to perform a wrapped pointer difference without triggering
  * UBSAN.
  *
  * @returns lhs - rhs with wrapping
