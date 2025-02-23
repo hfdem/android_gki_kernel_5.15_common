@@ -14,8 +14,6 @@
 #ifndef ERROR_H_MODULE
 #define ERROR_H_MODULE
 
-
-
 /* ****************************************
 *  Dependencies
 ******************************************/
@@ -23,7 +21,6 @@
 #include "compiler.h"
 #include "debug.h"
 #include "zstd_deps.h"       /* size_t */
-
 
 /* ****************************************
 *  Compiler-specific
@@ -150,6 +147,5 @@ void _force_has_format_string(const char *format, ...) {
             return err_code;                                                       \
         }                                                                          \
     } while(0)
-
 
 #endif /* ERROR_H_MODULE */
