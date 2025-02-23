@@ -34,7 +34,6 @@
 #define DEBUG_H_12987983217
 
 
-
 /* static assert is triggered at compile time, leaving no runtime artefact.
  * static assert only works with compile-time constants.
  * Also, this variant can only be used inside a function. */
@@ -105,7 +104,5 @@ extern int g_debuglevel; /* the variable is only declared,
 #  define RAWLOG(l, ...)   do { } while (0)    /* disabled */
 #  define DEBUGLOG(l, ...) do { } while (0)    /* disabled */
 #endif
-
-
 
 #endif /* DEBUG_H_12987983217 */
