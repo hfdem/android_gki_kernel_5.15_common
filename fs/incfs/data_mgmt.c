@@ -472,8 +472,11 @@ static ssize_t decompress(struct mount_info *mi,
 
 	switch (alg) {
 	case INCFS_BLOCK_COMPRESSED_LZ4:
-		result = LZ4_decompress_safe(src.data, dst.data, src.len,
-					     dst.len);
+#if defined(CONFIG_ARM64) && defined(CONFIG_KERNEL_MODE_NEON)
+	result = LZ4_arm64_decompress_safe(src.data, dst.data, src.len, dst.len, false);
+#else
+	result = LZ4_decompress_safe(src.data, dst.data, src.len, dst.len);
+#endif
 		if (result < 0)
 			return -EBADMSG;
 		return result;
